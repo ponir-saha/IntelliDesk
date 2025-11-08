@@ -1,0 +1,56 @@
+# RAG Service Configuration
+server:
+  port: 8083
+
+spring:
+  application:
+    name: rag-service
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# OpenAI Configuration
+openai:
+  api-key: ${OPENAI_API_KEY}
+  model: gpt-4-turbo-preview
+  embedding-model: text-embedding-3-small
+  max-tokens: 2000
+  temperature: 0.7
+
+# Weaviate Configuration
+weaviate:
+  url: http://localhost:8090
+  scheme: http
+  host: localhost
+  port: 8090
+  class-name: IntelliDeskDocument
+
+# File Storage Configuration
+file:
+  upload-dir: ./uploads
+  allowed-extensions: pdf,doc,docx,txt,md
+
+# LangChain4j Configuration
+langchain4j:
+  embedding:
+    dimension: 1536
+  retrieval:
+    max-results: 5
+    min-score: 0.7
