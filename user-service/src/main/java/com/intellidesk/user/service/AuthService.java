@@ -70,7 +70,13 @@ public class AuthService {
         user = userRepository.save(user);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-        String token = jwtTokenProvider.generateToken(userDetails);
+        
+        // Extract roles as list of strings
+        java.util.List<String> roleNames = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(java.util.stream.Collectors.toList());
+        
+        String token = jwtTokenProvider.generateToken(userDetails, user.getId().toString(), roleNames);
         String refreshToken = jwtTokenProvider.generateRefreshToken(userDetails);
 
         return new AuthResponse(token, refreshToken, mapToUserDto(user));
@@ -86,13 +92,18 @@ public class AuthService {
         );
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userRepository.findByUsername(userDetails.getUsername())
+        User user = userRepository.findByUsernameWithRoles(userDetails.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 
-        String token = jwtTokenProvider.generateToken(userDetails);
+        // Extract roles as list of strings
+        java.util.List<String> roleNames = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(java.util.stream.Collectors.toList());
+
+        String token = jwtTokenProvider.generateToken(userDetails, user.getId().toString(), roleNames);
         String refreshToken = jwtTokenProvider.generateRefreshToken(userDetails);
 
         return new AuthResponse(token, refreshToken, mapToUserDto(user));

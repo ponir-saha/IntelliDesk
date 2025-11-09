@@ -35,6 +35,13 @@ public class JwtTokenProvider {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userDetails.getUsername(), expiration);
     }
+    
+    public String generateToken(UserDetails userDetails, String userId, java.util.List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("roles", roles);
+        return createToken(claims, userDetails.getUsername(), expiration);
+    }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();

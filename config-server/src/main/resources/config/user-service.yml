@@ -6,9 +6,9 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/intellidesk
-    username: intellidesk
-    password: intellidesk123
+    url: jdbc:postgresql://postgres:5432/intellidesk
+    username: ${POSTGRES_USER:intellidesk}
+    password: ${POSTGRES_PASSWORD:intellidesk123}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -38,20 +38,40 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://eureka-server:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
 
 jwt:
-  secret: intellidesk-secret-key-change-in-production
-  expiration: 86400000
+  secret: ${JWT_SECRET:intellidesk-secret-key-change-in-production}
+  expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: 604800000
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://jaeger:9411/api/v2/spans
+
+logging:
+  level:
+    root: INFO
+    com.intellidesk: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

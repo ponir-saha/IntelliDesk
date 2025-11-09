@@ -2,8 +2,9 @@ package com.intellidesk.gateway.filter;
 
 import com.intellidesk.gateway.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -12,11 +13,10 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 @Component
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter implements GatewayFilter {
+public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
 
@@ -30,6 +30,11 @@ public class JwtAuthenticationFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+
+        // Allow OPTIONS requests (CORS preflight)
+        if (request.getMethod().matches("OPTIONS")) {
+            return chain.filter(exchange);
+        }
 
         // Check if the request is for a public endpoint
         if (isPublicEndpoint(request.getPath().value())) {
@@ -76,5 +81,10 @@ public class JwtAuthenticationFilter implements GatewayFilter {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
         return response.setComplete();
+    }
+
+    @Override
+    public int getOrder() {
+        return -1; // Execute before routing
     }
 }

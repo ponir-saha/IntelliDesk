@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { RagService } from '../../core/services/rag.service';
 
@@ -17,6 +17,7 @@ import { RagService } from '../../core/services/rag.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
@@ -28,6 +29,14 @@ import { RagService } from '../../core/services/rag.service';
     <mat-toolbar color="primary">
       <span>IntelliDesk</span>
       <span class="spacer"></span>
+      <button mat-button routerLink="/employees/my-profile">
+        <mat-icon>person</mat-icon>
+        My Profile
+      </button>
+      <button mat-button routerLink="/employees" *ngIf="isHR">
+        <mat-icon>people</mat-icon>
+        Employees
+      </button>
       <span>{{currentUser?.username}}</span>
       <button mat-icon-button (click)="logout()">
         <mat-icon>logout</mat-icon>
@@ -148,6 +157,7 @@ export class DashboardComponent {
   private fb = inject(FormBuilder);
 
   currentUser = this.authService.getCurrentUser();
+  isHR = false;
   selectedFile: File | null = null;
   uploadMessage = '';
   
@@ -156,6 +166,14 @@ export class DashboardComponent {
   questionForm: FormGroup = this.fb.group({
     question: ['']
   });
+
+  constructor() {
+    // Check if user has HR role
+    if (this.currentUser?.roles) {
+      this.isHR = this.currentUser.roles.includes('ROLE_HR') || 
+                  this.currentUser.roles.includes('ROLE_ADMIN');
+    }
+  }
 
   onFileSelected(event: any): void {
     this.selectedFile = event.target.files[0];

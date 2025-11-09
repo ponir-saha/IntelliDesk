@@ -6,10 +6,10 @@ spring:
     name: notification-service
   cloud:
     config:
-      uri: http://localhost:8888
+      uri: ${CONFIG_SERVER_URL:http://config-server:8888}
       fail-fast: false
   config:
-    import: optional:configserver:http://localhost:8888
+    import: optional:configserver:${CONFIG_SERVER_URL:http://config-server:8888}
 
 notification:
   kafka:
