@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: user-service
+  cloud:
+    config:
+      uri: ${CONFIG_SERVER_URL:http://config-server:8888}
+      fail-fast: false
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://config-server:8888}

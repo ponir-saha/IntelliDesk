@@ -1,0 +1,190 @@
+<div class="employee-detail-container">
+  <div class="header">
+    <button class="btn btn-back" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back to List
+    </button>
+    <div class="actions" *ngIf="employee">
+      <button *ngIf="isHR || isOwnProfile" class="btn btn-primary" (click)="editEmployee()">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+      <button *ngIf="isHR && !isOwnProfile" class="btn btn-danger" (click)="deleteEmployee()">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Loading employee details...
+  </div>
+
+  <div class="employee-detail" *ngIf="!loading && employee">
+    <div class="profile-header">
+      <div class="profile-image">
+        <i class="fas fa-user-circle" *ngIf="!employee.profileImageUrl"></i>
+        <img [src]="employee.profileImageUrl" *ngIf="employee.profileImageUrl" alt="Profile">
+      </div>
+      <div class="profile-info">
+        <h2>{{ employee.firstName }} {{ employee.middleName }} {{ employee.lastName }}</h2>
+        <p class="designation">{{ employee.designation }} - {{ employee.department }}</p>
+        <span [class]="getStatusClass(employee.status)" class="status-badge">
+          {{ employee.status }}
+        </span>
+      </div>
+    </div>
+
+    <div class="details-grid">
+      <!-- Personal Information -->
+      <div class="detail-section">
+        <h3><i class="fas fa-user"></i> Personal Information</h3>
+        <div class="detail-row">
+          <label>Employee ID:</label>
+          <span>{{ employee.employeeId }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Email:</label>
+          <span>{{ employee.email }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Phone:</label>
+          <span>{{ employee.phoneNumber }}</span>
+        </div>
+        <div class="detail-row" *ngIf="employee.alternatePhone">
+          <label>Alternate Phone:</label>
+          <span>{{ employee.alternatePhone }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Date of Birth:</label>
+          <span>{{ employee.dateOfBirth | date }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Gender:</label>
+          <span>{{ employee.gender }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Address:</label>
+          <span>{{ employee.address }}</span>
+        </div>
+      </div>
+
+      <!-- Employment Information -->
+      <div class="detail-section">
+        <h3><i class="fas fa-briefcase"></i> Employment Information</h3>
+        <div class="detail-row">
+          <label>Department:</label>
+          <span>{{ employee.department }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Designation:</label>
+          <span>{{ employee.designation }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Employment Type:</label>
+          <span>{{ employee.employmentType }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Joining Date:</label>
+          <span>{{ employee.joiningDate | date }}</span>
+        </div>
+        <div class="detail-row" *ngIf="employee.reportingManager">
+          <label>Reporting Manager:</label>
+          <span>{{ employee.reportingManager }}</span>
+        </div>
+        <div class="detail-row" *ngIf="isHR && employee.salary">
+          <label>Salary:</label>
+          <span class="highlight">{{ formatCurrency(employee.salary) }}</span>
+        </div>
+        <div class="detail-row" *ngIf="isHR">
+          <label>Status:</label>
+          <div class="status-actions">
+            <span [class]="getStatusClass(employee.status)" class="status-badge">
+              {{ employee.status }}
+            </span>
+            <select class="status-select" (change)="updateStatus($any($event.target).value)">
+              <option value="">Change Status...</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="ON_LEAVE">On Leave</option>
+              <option value="TERMINATED">Terminated</option>
+              <option value="RESIGNED">Resigned</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact -->
+      <div class="detail-section">
+        <h3><i class="fas fa-phone-square"></i> Emergency Contact</h3>
+        <div class="detail-row">
+          <label>Contact Name:</label>
+          <span>{{ employee.emergencyContactName }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Phone:</label>
+          <span>{{ employee.emergencyContactPhone }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Relation:</label>
+          <span>{{ employee.emergencyContactRelation }}</span>
+        </div>
+      </div>
+
+      <!-- Bank Details (HR Only) -->
+      <div class="detail-section" *ngIf="isHR && employee.bankName">
+        <h3><i class="fas fa-university"></i> Bank Details</h3>
+        <div class="detail-row">
+          <label>Bank Name:</label>
+          <span>{{ employee.bankName }}</span>
+        </div>
+        <div class="detail-row" *ngIf="employee.bankAccountNumber">
+          <label>Account Number:</label>
+          <span>{{ employee.bankAccountNumber }}</span>
+        </div>
+        <div class="detail-row" *ngIf="employee.bankIfscCode">
+          <label>IFSC Code:</label>
+          <span>{{ employee.bankIfscCode }}</span>
+        </div>
+      </div>
+
+      <!-- Professional Details -->
+      <div class="detail-section full-width" *ngIf="employee.skills || employee.qualifications || employee.certifications">
+        <h3><i class="fas fa-graduation-cap"></i> Professional Details</h3>
+        <div class="detail-row" *ngIf="employee.skills">
+          <label>Skills:</label>
+          <span>{{ employee.skills }}</span>
+        </div>
+        <div class="detail-row" *ngIf="employee.qualifications">
+          <label>Qualifications:</label>
+          <span>{{ employee.qualifications }}</span>
+        </div>
+        <div class="detail-row" *ngIf="employee.certifications">
+          <label>Certifications:</label>
+          <span>{{ employee.certifications }}</span>
+        </div>
+      </div>
+
+      <!-- HR Notes -->
+      <div class="detail-section full-width" *ngIf="isHR && employee.notes">
+        <h3><i class="fas fa-sticky-note"></i> HR Notes</h3>
+        <div class="notes">
+          {{ employee.notes }}
+        </div>
+      </div>
+
+      <!-- Audit Information -->
+      <div class="detail-section full-width audit-info">
+        <div class="detail-row" *ngIf="employee.createdAt">
+          <label>Created:</label>
+          <span>{{ employee.createdAt | date:'medium' }} <span *ngIf="employee.createdBy">by {{ employee.createdBy }}</span></span>
+        </div>
+        <div class="detail-row" *ngIf="employee.updatedAt">
+          <label>Last Updated:</label>
+          <span>{{ employee.updatedAt | date:'medium' }} <span *ngIf="employee.updatedBy">by {{ employee.updatedBy }}</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

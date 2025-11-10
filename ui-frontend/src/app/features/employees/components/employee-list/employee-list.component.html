@@ -1,0 +1,85 @@
+<div class="employee-list-container">
+  <div class="header">
+    <h2>Employee Management</h2>
+    <button *ngIf="isHR" class="btn btn-primary" (click)="createEmployee()">
+      <i class="fas fa-plus"></i> Add New Employee
+    </button>
+  </div>
+
+  <div class="search-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        [(ngModel)]="searchKeyword" 
+        (keyup.enter)="searchEmployees()"
+        placeholder="Search by name, email, or employee ID..."
+        class="search-input"
+      />
+      <button class="btn btn-search" (click)="searchEmployees()">
+        <i class="fas fa-search"></i> Search
+      </button>
+      <button class="btn btn-secondary" (click)="searchKeyword=''; loadEmployees()">
+        <i class="fas fa-redo"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Loading employees...
+  </div>
+
+  <div class="employees-table" *ngIf="!loading && filteredEmployees.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Designation</th>
+          <th>Status</th>
+          <th>Joining Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let employee of filteredEmployees">
+          <td>{{ employee.employeeId }}</td>
+          <td>{{ employee.firstName }} {{ employee.lastName }}</td>
+          <td>{{ employee.email }}</td>
+          <td>{{ employee.department }}</td>
+          <td>{{ employee.designation }}</td>
+          <td>
+            <span [class]="getStatusClass(employee.status)" class="status-badge">
+              {{ employee.status }}
+            </span>
+          </td>
+          <td>{{ employee.joiningDate | date }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-info" (click)="viewEmployee(employee.id!)" title="View">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button *ngIf="isHR" class="btn btn-sm btn-warning" (click)="editEmployee(employee.id!)" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button *ngIf="isHR" class="btn btn-sm btn-danger" (click)="deleteEmployee(employee.id!, employee.employeeId)" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="no-data" *ngIf="!loading && filteredEmployees.length === 0">
+    <i class="fas fa-users" style="font-size: 48px; color: #ccc;"></i>
+    <p>No employees found</p>
+    <button *ngIf="isHR" class="btn btn-primary" (click)="createEmployee()">
+      Add First Employee
+    </button>
+  </div>
+</div>

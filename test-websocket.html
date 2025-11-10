@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Upload Progress - WebSocket Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .progress-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            display: none;
+        }
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 40px;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        #uploadForm {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .log-entry {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #4CAF50;
+            background-color: #f9f9f9;
+            font-size: 14px;
+        }
+        #logs {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 RAG Document Upload with Real-Time Progress</h1>
+    
+    <div id="connectionStatus" class="status disconnected">
+        ❌ Not Connected
+    </div>
+
+    <div id="uploadForm">
+        <h2>Upload Document</h2>
+        <input type="file" id="fileInput" accept=".pdf,.doc,.docx">
+        <button id="uploadBtn" onclick="uploadFile()" disabled>Upload</button>
+    </div>
+
+    <div id="progressContainer" class="progress-container">
+        <h2 id="progressTitle">Upload Progress</h2>
+        <div class="progress-bar-wrapper">
+            <div id="progressBar" class="progress-bar">0%</div>
+        </div>
+        <div id="progressDetails">
+            <p><strong>Status:</strong> <span id="statusText">-</span></p>
+            <p><strong>Message:</strong> <span id="messageText">-</span></p>
+            <p id="segmentInfo" style="display: none;">
+                <strong>Segments:</strong> <span id="segmentText">-</span>
+            </p>
+        </div>
+    </div>
+
+    <h3>Connection Logs</h3>
+    <div id="logs"></div>
+
+    <script>
+        let stompClient = null;
+        const RAG_SERVICE_URL = 'http://localhost:8083';
+
+        function addLog(message, emoji = '📝') {
+            const logDiv = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `${emoji} ${new Date().toLocaleTimeString()} - ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function connectWebSocket() {
+            addLog('Attempting to connect to WebSocket...', '🔌');
+            
+            const socket = new SockJS(RAG_SERVICE_URL + '/ws');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function(frame) {
+                addLog('Connected to WebSocket!', '✅');
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('connectionStatus').textContent = '✅ Connected';
+                document.getElementById('uploadBtn').disabled = false;
+                
+                // Subscribe to upload progress topic
+                stompClient.subscribe('/topic/upload-progress', function(message) {
+                    const progress = JSON.parse(message.body);
+                    updateProgress(progress);
+                });
+                
+                addLog('Subscribed to /topic/upload-progress', '📡');
+            }, function(error) {
+                addLog('Connection error: ' + error, '❌');
+                document.getElementById('connectionStatus').className = 'status disconnected';
+                document.getElementById('connectionStatus').textContent = '❌ Connection Failed';
+                
+                // Retry connection after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            });
+        }
+
+        function updateProgress(progress) {
+            addLog(`Progress update: ${progress.status} - ${progress.progressPercentage}%`, '📊');
+            
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
+            const messageText = document.getElementById('messageText');
+            const segmentInfo = document.getElementById('segmentInfo');
+            const segmentText = document.getElementById('segmentText');
+            
+            // Show progress container
+            progressContainer.style.display = 'block';
+            
+            // Update progress bar
+            progressBar.style.width = progress.progressPercentage + '%';
+            progressBar.textContent = progress.progressPercentage + '%';
+            
+            // Update status text
+            const statusEmojis = {
+                'started': '📤',
+                'saving': '💾',
+                'parsing': '📄',
+                'splitting': '✂️',
+                'embedding': '🧠',
+                'completed': '✅',
+                'failed': '❌'
+            };
+            
+            statusText.textContent = statusEmojis[progress.status] + ' ' + progress.status.toUpperCase();
+            messageText.textContent = progress.message;
+            
+            // Show/hide segment info
+            if (progress.totalSegments > 0) {
+                segmentInfo.style.display = 'block';
+                segmentText.textContent = `${progress.currentSegment} / ${progress.totalSegments}`;
+            }
+            
+            // Handle completion
+            if (progress.status === 'completed') {
+                addLog('✅ Upload completed successfully!', '🎉');
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 5000);
+            } else if (progress.status === 'failed') {
+                addLog('❌ Upload failed: ' + progress.message, '⚠️');
+                progressBar.style.background = 'linear-gradient(90deg, #f44336, #d32f2f)';
+            }
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file first!');
+                return;
+            }
+            
+            addLog(`Starting upload of ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, '📤');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Upload via HTTP
+            fetch(RAG_SERVICE_URL + '/rag/documents/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                addLog('Upload request sent successfully', '✅');
+                console.log('Response:', data);
+            })
+            .catch(error => {
+                addLog('Upload error: ' + error, '❌');
+                console.error('Error:', error);
+            });
+        }
+
+        // Connect on page load
+        window.onload = function() {
+            addLog('Page loaded, initializing...', '🚀');
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>
