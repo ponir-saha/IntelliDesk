@@ -4,8 +4,11 @@
       <i class="fas fa-arrow-left"></i> Back to List
     </button>
     <div class="actions" *ngIf="employee">
-      <button *ngIf="isHR || isOwnProfile" class="btn btn-primary" (click)="editEmployee()">
-        <i class="fas fa-edit"></i> Edit
+      <button *ngIf="canEditInfo()" class="btn btn-primary" (click)="editEmployee()">
+        <i class="fas fa-edit"></i> Edit Info
+      </button>
+      <button *ngIf="canEditSalary() && !editingSalary" class="btn btn-success" (click)="startEditSalary()">
+        <i class="fas fa-dollar-sign"></i> Edit Salary
       </button>
       <button *ngIf="isHR && !isOwnProfile" class="btn btn-danger" (click)="deleteEmployee()">
         <i class="fas fa-trash"></i> Delete
@@ -93,10 +96,28 @@
           <label>Reporting Manager:</label>
           <span>{{ employee.reportingManager }}</span>
         </div>
-        <div class="detail-row" *ngIf="isHR && employee.salary">
+        
+        <!-- Salary Display/Edit -->
+        <div class="detail-row" *ngIf="canViewSalary()">
           <label>Salary:</label>
-          <span class="highlight">{{ formatCurrency(employee.salary) }}</span>
+          <div class="salary-section">
+            <span *ngIf="!editingSalary" class="highlight">{{ formatCurrency(employee.salary) }}</span>
+            <div *ngIf="editingSalary" class="salary-edit-form">
+              <input type="number" 
+                     [(ngModel)]="newSalary" 
+                     class="salary-input" 
+                     placeholder="Enter new salary"
+                     step="0.01">
+              <button class="btn btn-sm btn-success" (click)="saveSalary()">
+                <i class="fas fa-check"></i> Save
+              </button>
+              <button class="btn btn-sm btn-secondary" (click)="cancelEditSalary()">
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </div>
+          </div>
         </div>
+        
         <div class="detail-row" *ngIf="isHR">
           <label>Status:</label>
           <div class="status-actions">

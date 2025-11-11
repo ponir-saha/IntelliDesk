@@ -8,6 +8,40 @@ spring:
     config:
       uri: ${CONFIG_SERVER_URL:http://config-server:8888}
       fail-fast: false
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: user-service-auth
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /auth/$\{segment}
+        - id: user-service-users
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - RewritePath=/api/users/(?<segment>.*), /users/$\{segment}
+        - id: employee-service
+          uri: lb://EMPLOYEE-SERVICE
+          predicates:
+            - Path=/api/employees/**
+          filters:
+            - RewritePath=/api/employees/(?<segment>.*), /employees/$\{segment}
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://config-server:8888}
 
@@ -15,4 +49,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: "*"
+  endpoint:
+    gateway:
+      enabled: true

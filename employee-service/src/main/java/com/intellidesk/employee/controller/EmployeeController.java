@@ -27,10 +27,10 @@ public class EmployeeController {
     private final EmployeeService employeeService;
 
     /**
-     * HR/Admin can create new employees
+     * HR can create new employees
      */
     @PostMapping
-    // // @PreAuthorize("hasAnyRole('HR', 'ADMIN')") // Temporarily disabled  // Temporarily disabled - JWT doesn't contain roles
+    @PreAuthorize("hasRole('ROLE_HR')")
     public ResponseEntity<EmployeeResponse> createEmployee(
             @Valid @RequestBody EmployeeRequest request,
             HttpServletRequest httpRequest) {
@@ -43,27 +43,50 @@ public class EmployeeController {
     }
 
     /**
-     * HR/Admin can update any employee
+     * HR can update employee information (except salary)
      */
     @PutMapping("/{id}")
-    // @PreAuthorize("hasAnyRole('HR', 'ADMIN')") // Temporarily disabled
+    @PreAuthorize("hasRole('ROLE_HR')")
     public ResponseEntity<EmployeeResponse> updateEmployee(
             @PathVariable Long id,
             @Valid @RequestBody EmployeeRequest request,
             HttpServletRequest httpRequest) {
         
         String updatedBy = (String) httpRequest.getAttribute("username");
-        log.info("Updating employee {} by user: {}", id, updatedBy);
+        log.info("HR updating employee {} by user: {}", id, updatedBy);
         
-        EmployeeResponse response = employeeService.updateEmployee(id, request, updatedBy);
+        // HR cannot update salary
+        EmployeeResponse response = employeeService.updateEmployeeByHR(id, request, updatedBy);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Accounts department can update employee salary
+     */
+    @PatchMapping("/{id}/salary")
+    @PreAuthorize("hasRole('ROLE_ACCOUNTS')")
+    public ResponseEntity<EmployeeResponse> updateEmployeeSalary(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> salaryUpdate,
+            HttpServletRequest httpRequest) {
+        
+        String updatedBy = (String) httpRequest.getAttribute("username");
+        log.info("Accounts updating salary for employee {} by user: {}", id, updatedBy);
+        
+        if (!salaryUpdate.containsKey("salary")) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Double newSalary = Double.valueOf(salaryUpdate.get("salary").toString());
+        EmployeeResponse response = employeeService.updateEmployeeSalary(id, newSalary, updatedBy);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * HR/Admin can delete employees
+     * HR can delete employees
      */
     @DeleteMapping("/{id}")
-    // @PreAuthorize("hasAnyRole('HR', 'ADMIN')") // Temporarily disabled
+    @PreAuthorize("hasRole('ROLE_HR')")
     public ResponseEntity<Map<String, String>> deleteEmployee(
             @PathVariable Long id,
             HttpServletRequest httpRequest) {
@@ -79,7 +102,7 @@ public class EmployeeController {
      * HR/Admin can get all employees
      */
     @GetMapping
-    // @PreAuthorize("hasAnyRole('HR', 'ADMIN')") // Temporarily disabled
+    @PreAuthorize("hasAnyRole('ROLE_HR', 'ROLE_ACCOUNTS')")
     public ResponseEntity<List<EmployeeResponse>> getAllEmployees() {
         log.info("Fetching all employees");
         List<EmployeeResponse> employees = employeeService.getAllEmployees();
@@ -90,7 +113,7 @@ public class EmployeeController {
      * HR/Admin can get employee by ID
      */
     @GetMapping("/{id}")
-    // @PreAuthorize("hasAnyRole('HR', 'ADMIN')") // Temporarily disabled
+    @PreAuthorize("hasAnyRole('ROLE_HR', 'ROLE_ACCOUNTS')")
     public ResponseEntity<EmployeeResponse> getEmployeeById(@PathVariable Long id) {
         log.info("Fetching employee with ID: {}", id);
         EmployeeResponse employee = employeeService.getEmployeeById(id);
@@ -162,58 +185,16 @@ public class EmployeeController {
     }
 
     /**
-     * Employees can update their own profile (limited fields)
+     * Employees CANNOT update their own profile
+     * This endpoint is disabled - only HR and Accounts can update employee data
      */
     @PatchMapping("/my-profile")
-    public ResponseEntity<EmployeeResponse> updateMyProfile(
+    public ResponseEntity<Map<String, String>> updateMyProfile(
             @RequestBody EmployeeRequest request,
             HttpServletRequest httpRequest) {
         
-        String userId = (String) httpRequest.getAttribute("userId");
-        String username = (String) httpRequest.getAttribute("username");
-        log.info("User {} updating their profile", username);
-        
-        // Get current employee record
-        EmployeeResponse currentEmployee = employeeService.getEmployeeByUserId(userId);
-        
-        // Only allow updating specific fields (not salary, bank details, etc.)
-        // Create a limited update request
-        EmployeeRequest limitedRequest = EmployeeRequest.builder()
-                .employeeId(currentEmployee.getEmployeeId())
-                .userId(userId)
-                .email(request.getEmail())
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .middleName(request.getMiddleName())
-                .phoneNumber(request.getPhoneNumber())
-                .alternatePhone(request.getAlternatePhone())
-                .dateOfBirth(currentEmployee.getDateOfBirth())
-                .gender(currentEmployee.getGender())
-                .department(currentEmployee.getDepartment())
-                .designation(currentEmployee.getDesignation())
-                .joiningDate(currentEmployee.getJoiningDate())
-                .employmentType(currentEmployee.getEmploymentType())
-                .status(currentEmployee.getStatus())
-                .reportingManager(currentEmployee.getReportingManager())
-                .salary(currentEmployee.getSalary())
-                .address(request.getAddress())
-                .city(request.getCity())
-                .state(request.getState())
-                .country(request.getCountry())
-                .postalCode(request.getPostalCode())
-                .emergencyContactName(request.getEmergencyContactName())
-                .emergencyContactPhone(request.getEmergencyContactPhone())
-                .emergencyContactRelation(request.getEmergencyContactRelation())
-                .skills(request.getSkills())
-                .qualifications(request.getQualifications())
-                .certifications(request.getCertifications())
-                .profileImageUrl(request.getProfileImageUrl())
-                .build();
-        
-        EmployeeResponse response = employeeService.updateEmployee(
-                currentEmployee.getId(), limitedRequest, username);
-        
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", "Employees cannot update their own information. Please contact HR for changes."));
     }
 
     /**

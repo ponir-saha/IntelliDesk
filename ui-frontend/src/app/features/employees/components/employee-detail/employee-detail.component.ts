@@ -1,12 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { EmployeeService, Employee } from '../../../../core/services/employee.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-employee-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './employee-detail.component.html',
   styleUrls: ['./employee-detail.component.css']
 })
@@ -15,10 +18,17 @@ export class EmployeeDetailComponent implements OnInit {
   loading: boolean = false;
   error: string = '';
   isHR: boolean = false;
+  isAccounts: boolean = false;
   isOwnProfile: boolean = false;
+  
+  // For salary editing
+  editingSalary: boolean = false;
+  newSalary: number = 0;
 
   constructor(
     private employeeService: EmployeeService,
+    private authService: AuthService,
+    private notificationService: NotificationService,
     private route: ActivatedRoute,
     private router: Router
   ) { }
@@ -42,11 +52,20 @@ export class EmployeeDetailComponent implements OnInit {
   }
 
   checkUserRole(): void {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      this.isHR = user.roles && (user.roles.includes('ROLE_HR') || user.roles.includes('ROLE_ADMIN'));
-    }
+    this.isHR = this.authService.isHR();
+    this.isAccounts = this.authService.isAccounts();
+  }
+
+  canEditInfo(): boolean {
+    return this.isHR && !this.isOwnProfile;
+  }
+
+  canEditSalary(): boolean {
+    return this.isAccounts && !this.isOwnProfile;
+  }
+
+  canViewSalary(): boolean {
+    return this.isHR || this.isAccounts || this.isOwnProfile;
   }
 
   loadEmployee(id: number): void {
@@ -99,18 +118,48 @@ export class EmployeeDetailComponent implements OnInit {
     }
   }
 
+  startEditSalary(): void {
+    if (!this.canEditSalary()) return;
+    this.editingSalary = true;
+    this.newSalary = this.employee?.salary || 0;
+  }
+
+  cancelEditSalary(): void {
+    this.editingSalary = false;
+    this.newSalary = 0;
+  }
+
+  saveSalary(): void {
+    if (!this.employee?.id || !this.canEditSalary()) return;
+
+    this.loading = true;
+    this.employeeService.updateEmployeeSalary(this.employee.id, this.newSalary).subscribe({
+      next: (data) => {
+        this.employee = data;
+        this.editingSalary = false;
+        this.notificationService.success('Salary updated successfully');
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error updating salary:', err);
+        this.notificationService.error('Failed to update salary');
+        this.loading = false;
+      }
+    });
+  }
+
   deleteEmployee(): void {
     if (!this.employee?.id) return;
 
     if (confirm(`Are you sure you want to delete this employee?`)) {
       this.employeeService.deleteEmployee(this.employee.id).subscribe({
         next: () => {
-          alert('Employee deleted successfully');
+          this.notificationService.success('Employee deleted successfully');
           this.router.navigate(['/employees']);
         },
         error: (err) => {
           console.error('Error deleting employee:', err);
-          alert('Failed to delete employee');
+          this.notificationService.error('Failed to delete employee');
         }
       });
     }
@@ -122,11 +171,11 @@ export class EmployeeDetailComponent implements OnInit {
     this.employeeService.updateEmployeeStatus(this.employee.id, status).subscribe({
       next: (data) => {
         this.employee = data;
-        alert('Status updated successfully');
+        this.notificationService.success('Status updated successfully');
       },
       error: (err) => {
         console.error('Error updating status:', err);
-        alert('Failed to update status');
+        this.notificationService.error('Failed to update status');
       }
     });
   }

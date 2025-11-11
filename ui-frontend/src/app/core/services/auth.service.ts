@@ -49,6 +49,31 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
+  hasRole(role: string): boolean {
+    const user = this.getCurrentUser();
+    return user ? user.roles.includes(role) : false;
+  }
+
+  isHR(): boolean {
+    return this.hasRole('ROLE_HR');
+  }
+
+  isAccounts(): boolean {
+    return this.hasRole('ROLE_ACCOUNTS');
+  }
+
+  canEditEmployeeInfo(): boolean {
+    return this.isHR();
+  }
+
+  canEditSalary(): boolean {
+    return this.isAccounts();
+  }
+
+  canViewEmployeeList(): boolean {
+    return this.isHR() || this.isAccounts();
+  }
+
   private handleAuthResponse(response: AuthResponse): void {
     localStorage.setItem('token', response.token);
     localStorage.setItem('refreshToken', response.refreshToken);

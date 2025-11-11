@@ -140,10 +140,19 @@ export class EmployeeService {
   }
 
   /**
-   * Update employee (HR/ADMIN only)
+   * Update employee (HR only - cannot update salary)
    */
   updateEmployee(id: number, employee: EmployeeRequest): Observable<Employee> {
     return this.http.put<Employee>(`${this.apiUrl}/${id}`, employee, {
+      headers: this.getHeaders()
+    });
+  }
+
+  /**
+   * Update employee salary (ACCOUNTS only)
+   */
+  updateEmployeeSalary(id: number, salary: number): Observable<Employee> {
+    return this.http.patch<Employee>(`${this.apiUrl}/${id}/salary`, { salary }, {
       headers: this.getHeaders()
     });
   }

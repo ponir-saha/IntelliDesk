@@ -50,7 +50,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - "2182:2181"
     networks:
       - intellidesk-network
 
@@ -61,22 +61,17 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "9093:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093,PLAINTEXT_INTERNAL://kafka:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     networks:
       - intellidesk-network
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
 
   # Config Server
   config-server:
@@ -132,12 +127,10 @@ services:
       CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/intellidesk
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION: ${JWT_EXPIRATION}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_USERNAME: intellidesk
+      SPRING_DATASOURCE_PASSWORD: intellidesk123
+      JWT_SECRET: intellidesk-secret-key-change-in-production
+      JWT_EXPIRATION: 86400000
     networks:
       - intellidesk-network
 
@@ -159,11 +152,8 @@ services:
       CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/intellidesk
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_USERNAME: intellidesk
+      SPRING_DATASOURCE_PASSWORD: intellidesk123
     networks:
       - intellidesk-network
 
@@ -175,7 +165,7 @@ services:
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_healthy
+        condition: service_started
       eureka-server:
         condition: service_healthy
       config-server:
@@ -223,7 +213,7 @@ services:
     container_name: intellidesk-tool-service
     depends_on:
       kafka:
-        condition: service_healthy
+        condition: service_started
       eureka-server:
         condition: service_healthy
       config-server:
@@ -248,7 +238,7 @@ services:
       config-server:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "8085:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       CONFIG_SERVER_URL: http://config-server:8888
@@ -266,7 +256,7 @@ services:
     ports:
       - "4200:80"
     environment:
-      API_BASE_URL: http://localhost:8080
+      API_BASE_URL: http://localhost:8085
     networks:
       - intellidesk-network
 

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmployeeService, Employee } from '../../../../core/services/employee.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-employee-list',
@@ -18,24 +19,38 @@ export class EmployeeListComponent implements OnInit {
   loading: boolean = false;
   error: string = '';
   isHR: boolean = false;
+  isAccounts: boolean = false;
 
   constructor(
     private employeeService: EmployeeService,
+    private authService: AuthService,
     private router: Router
   ) { }
 
   ngOnInit(): void {
     this.checkUserRole();
-    this.loadEmployees();
+    if (this.canViewEmployeeList()) {
+      this.loadEmployees();
+    } else {
+      this.error = 'You do not have permission to view employee list';
+    }
   }
 
   checkUserRole(): void {
-    // Check if user has HR role
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      this.isHR = user.roles && (user.roles.includes('ROLE_HR') || user.roles.includes('ROLE_ADMIN'));
-    }
+    this.isHR = this.authService.isHR();
+    this.isAccounts = this.authService.isAccounts();
+  }
+
+  canViewEmployeeList(): boolean {
+    return this.authService.canViewEmployeeList();
+  }
+
+  canEditInfo(): boolean {
+    return this.isHR;
+  }
+
+  canEditSalary(): boolean {
+    return this.isAccounts;
   }
 
   loadEmployees(): void {

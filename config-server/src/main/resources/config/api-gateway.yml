@@ -30,17 +30,23 @@ spring:
         - id: employee-service
           uri: lb://EMPLOYEE-SERVICE
           predicates:
-            - Path=/api/employees/**
+            - Path=/api/employees,/api/employees/**
           filters:
-            - RewritePath=/api/(?<segment>.*), /${segment}
+            - RewritePath=/api/employees(?<segment>/.*|), /employees$\{segment}
 
         # User Service Routes
-        - id: user-service
-          uri: lb://user-service
+        - id: user-service-auth
+          uri: lb://USER-SERVICE
           predicates:
-            - Path=/api/users/**,/api/auth/**
+            - Path=/api/auth,/api/auth/**
           filters:
-            - RewritePath=/api/(?<segment>.*), /${segment}
+            - RewritePath=/api/auth(?<segment>/.*|), /auth$\{segment}
+        - id: user-service-users
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users,/api/users/**
+          filters:
+            - RewritePath=/api/users(?<segment>/.*|), /users$\{segment}
             # Temporarily disabled until Redis is configured
             # - name: RequestRateLimiter
             #   args:
@@ -53,7 +59,7 @@ spring:
           predicates:
             - Path=/api/notifications/**
           filters:
-            - RewritePath=/api/(?<segment>.*), /${segment}
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
 
         # RAG Service Routes
         - id: rag-service
@@ -61,7 +67,7 @@ spring:
           predicates:
             - Path=/api/rag/**,/api/documents/**
           filters:
-            - RewritePath=/api/(?<segment>.*), /${segment}
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
 
         # Tool Service Routes
         - id: tool-service
@@ -69,7 +75,7 @@ spring:
           predicates:
             - Path=/api/tools/**
           filters:
-            - RewritePath=/api/(?<segment>.*), /${segment}
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
 
 eureka:
   client:

@@ -134,6 +134,77 @@ public class EmployeeService {
         return EmployeeResponse.fromEntity(updatedEmployee);
     }
 
+    @Transactional
+    public EmployeeResponse updateEmployeeByHR(Long id, EmployeeRequest request, String updatedBy) {
+        log.info("HR updating employee with ID: {}", id);
+
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with ID: " + id));
+
+        // Check if email is being changed and if it already exists
+        if (!employee.getEmail().equals(request.getEmail()) && 
+            employeeRepository.existsByEmail(request.getEmail())) {
+            throw new ResourceAlreadyExistsException("Employee with email " + request.getEmail() + " already exists");
+        }
+
+        // HR can update ALL fields EXCEPT salary
+        employee.setEmail(request.getEmail());
+        employee.setFirstName(request.getFirstName());
+        employee.setLastName(request.getLastName());
+        employee.setMiddleName(request.getMiddleName());
+        employee.setPhoneNumber(request.getPhoneNumber());
+        employee.setAlternatePhone(request.getAlternatePhone());
+        employee.setDateOfBirth(request.getDateOfBirth());
+        employee.setGender(request.getGender());
+        employee.setDepartment(request.getDepartment());
+        employee.setDesignation(request.getDesignation());
+        employee.setJoiningDate(request.getJoiningDate());
+        employee.setEmploymentType(request.getEmploymentType());
+        if (request.getStatus() != null) {
+            employee.setStatus(request.getStatus());
+        }
+        employee.setReportingManager(request.getReportingManager());
+        // NOTE: Salary is NOT updated - only Accounts can update salary
+        employee.setAddress(request.getAddress());
+        employee.setCity(request.getCity());
+        employee.setState(request.getState());
+        employee.setCountry(request.getCountry());
+        employee.setPostalCode(request.getPostalCode());
+        employee.setEmergencyContactName(request.getEmergencyContactName());
+        employee.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        employee.setEmergencyContactRelation(request.getEmergencyContactRelation());
+        employee.setBankName(request.getBankName());
+        employee.setBankAccountNumber(request.getBankAccountNumber());
+        employee.setBankIfscCode(request.getBankIfscCode());
+        employee.setSkills(request.getSkills());
+        employee.setQualifications(request.getQualifications());
+        employee.setCertifications(request.getCertifications());
+        employee.setNotes(request.getNotes());
+        employee.setProfileImageUrl(request.getProfileImageUrl());
+        employee.setUpdatedBy(updatedBy);
+
+        Employee updatedEmployee = employeeRepository.save(employee);
+        log.info("Employee updated by HR successfully with ID: {}", updatedEmployee.getId());
+
+        return EmployeeResponse.fromEntity(updatedEmployee);
+    }
+
+    @Transactional
+    public EmployeeResponse updateEmployeeSalary(Long id, Double newSalary, String updatedBy) {
+        log.info("Accounts updating salary for employee ID: {} to {}", id, newSalary);
+        
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with ID: " + id));
+        
+        employee.setSalary(java.math.BigDecimal.valueOf(newSalary));
+        employee.setUpdatedBy(updatedBy);
+        
+        Employee updatedEmployee = employeeRepository.save(employee);
+        log.info("Employee salary updated successfully");
+        
+        return EmployeeResponse.fromEntity(updatedEmployee);
+    }
+
     @Transactional(readOnly = true)
     public EmployeeResponse getEmployeeById(Long id) {
         log.info("Fetching employee with ID: {}", id);

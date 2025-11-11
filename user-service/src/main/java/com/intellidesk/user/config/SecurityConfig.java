@@ -1,5 +1,6 @@
 package com.intellidesk.user.config;
 
+import com.intellidesk.user.security.JwtAuthenticationFilter;
 import com.intellidesk.user.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -24,19 +26,24 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.disable())  // CORS is handled by API Gateway
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/auth/**", "/actuator/**", "/oauth2/**").permitAll()
+                        .requestMatchers("/api/users/**", "/users/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authenticationProvider(authenticationProvider());
+                .oauth2Login(oauth2 -> oauth2.disable())  // Disable OAuth2 login
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

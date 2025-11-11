@@ -51,6 +51,55 @@
   background-color: #c82333;
 }
 
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.salary-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.salary-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.salary-input {
+  padding: 5px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 150px;
+}
+
+.salary-input:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
 .actions {
   display: flex;
   gap: 10px;
